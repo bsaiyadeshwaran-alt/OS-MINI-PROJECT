@@ -1,0 +1,148 @@
+user.h
+#ifndef USER_H
+#define USER_H
+#define MAX 50
+typedef struct {
+    char username[50];
+    char password[50];
+} User;
+void registerUser();
+int loginUser(char loggedInUser[]);
+#endif
+
+// file.h
+#ifndef FILE_H
+#define FILE_H
+typedef struct {
+    char filename[50];
+    char owner[50];
+    int read;
+    int write;
+    int execute;
+} File;
+void createFile(char username[]);
+void accessFile(char username[]);
+#endif
+user.c
+#include <stdio.h>
+#include <string.h>
+#include "user.h"
+
+void registerUser() {
+    FILE *fp = fopen("data/users.txt", "a");
+    User u;
+    printf("Enter username: ");
+    scanf("%s", u.username);
+    printf("Enter password: ");
+    scanf("%s", u.password);
+    fprintf(fp, "%s %s\n", u.username, u.password);
+    fclose(fp);
+    printf("User registered successfully!\n");
+}
+
+int loginUser(char loggedInUser[]) {
+    FILE *fp = fopen("data/users.txt", "r");
+    char uname[50], pass[50];
+    char u[50], p[50];
+    printf("Enter username: ");
+    scanf("%s", uname);
+    printf("Enter password: ");
+    scanf("%s", pass);
+    while (fscanf(fp, "%s %s", u, p) != EOF) {
+        if (strcmp(uname, u) == 0 && strcmp(pass, p) == 0) {
+            strcpy(loggedInUser, uname);
+            fclose(fp);
+            return 1;
+        }
+    }
+    fclose(fp);
+    return 0;
+}
+
+ file.c
+#include <stdio.h>
+#include <string.h>
+#include "file.h"
+
+void createFile(char username[]) {
+    FILE *fp = fopen("data/files.txt", "a");
+    File f;
+    printf("Enter filename: ");
+    scanf("%s", f.filename);
+    strcpy(f.owner, username);
+    printf("Set permissions (1 = allow, 0 = deny)\n");
+    printf("Read: ");
+    scanf("%d", &f.read);
+    printf("Write: ");
+    scanf("%d", &f.write);
+    printf("Execute: ");
+    scanf("%d", &f.execute);
+    fprintf(fp, "%s %s %d %d %d\n",
+            f.filename, f.owner, f.read, f.write, f.execute);
+    fclose(fp);
+    printf("File created successfully!\n");
+}
+
+void accessFile(char username[]) {
+    FILE *fp = fopen("data/files.txt", "r");
+    File f;
+    char fname[50];
+    int found = 0;
+    printf("Enter filename to access: ");
+    scanf("%s", fname);
+    while (fscanf(fp, "%s %s %d %d %d",
+                  f.filename, f.owner,
+                  &f.read, &f.write, &f.execute) != EOF) {
+        if (strcmp(fname, f.filename) == 0) {
+            found = 1;
+            printf("Permissions:\n");
+            if (f.read) printf("Read Allowed\n");
+            else printf("Read Denied\n");
+            if (f.write) printf("Write Allowed\n");
+            else printf("Write Denied\n");
+            if (f.execute) printf("Execute Allowed\n");
+            else printf("Execute Denied\n");
+            break;
+        }
+    }
+    if (!found)
+        printf("File not found!\n");
+    fclose(fp);
+}
+ main.c
+#include <stdio.h>
+#include <string.h>
+#include "user.h"
+#include "file.h"
+
+int main() {
+    int choice;
+    char loggedInUser[50];
+    while (1) {
+        printf("\n1. Register\n2. Login\n3. Exit\nChoice: ");
+        scanf("%d", &choice);
+        if (choice == 1) {
+            registerUser();
+        } else if (choice == 2) {
+            if (loginUser(loggedInUser)) {
+                printf("Login Successful!\n");
+                int ch;
+                while (1) {
+                    printf("\n1. Create File\n2. Access File\n3. Logout\nChoice: ");
+                    scanf("%d", &ch);
+                    if (ch == 1)
+                        createFile(loggedInUser);
+                    else if (ch == 2)
+                        accessFile(loggedInUser);
+                    else
+                        break;
+                }
+            } else {
+                printf("Invalid credentials!\n");
+            }
+        } else {
+            break;
+        }
+    }
+    return 0;
+}
